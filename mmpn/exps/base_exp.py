@@ -13,27 +13,10 @@ from ..core.runner import MRunner
 
 from mmcv.runner.hooks.hook import HOOKS, Hook
 from mmcv.runner import get_dist_info, DistSamplerSeedHook, build_optimizer
+from mmcv.runner import Runner, save_checkpoint
+
 import mmcv
-
-class BatchProccessor():
-    def __init__(self, loss):
-        self.loss = loss        
-    
-    def __call__(self, model, data, train_mode):
-        input, label = data
-        label = label.cuda(non_blocking=True)
-        pred = model(input)
-        if train_mode:
-            loss = self.loss(pred, label)
-
-            log_vars = OrderedDict()
-            log_vars['loss'] = loss.item()
-            outputs = dict(loss=loss, log_vars=log_vars, num_samples=input.size(0))
-            
-        else:
-            pass
-            # calc acc ...        
-        return outputs
+from ..models.builder import build_batch_process, build_submodel
 
 
 import logging
@@ -57,6 +40,7 @@ class BaseExp:
         self.evaluators = None
         
         self.loss = None
+        self.batch_process = None
         
     def build_data_provider(self):
         if self.dp is not None:
@@ -68,15 +52,15 @@ class BaseExp:
     def build_model(self):
         if self.model is not None:
             return self.model
-        from ..models.builder import build_submodel
+        
         self.model = build_submodel(self.cfg.model)
         ###########################################
    
-    def build_loss(self):
-        if self.loss is not None:
-            return self.loss
-        from ..models.builder import build_loss
-        self.loss = build_loss(self.cfg.loss)
+    def build_batch_process(self):
+        if self.batch_process is not None:
+            return self.batch_process
+       
+        self.batch_process = build_batch_process(self.cfg.batch_process)
     
     def build_optimizer(self):
         if self.optimizer is not None:
@@ -136,12 +120,12 @@ class BaseExp:
         
         # Step 5) build runner
         #######################################
-        from mmcv.runner import Runner, save_checkpoint
-        self.build_loss() # Build loss
-        batch_processor = BatchProccessor(self.loss) # generate batch_processor
+
+        self.build_batch_process()
+
         runner = MRunner(
             model=self.model,
-            batch_processor=batch_processor,
+            batch_processor=self.batch_process,
             optimizer=self.optimizer, 
             work_dir=self.cfg.work_dir,
             logger=self.logger,

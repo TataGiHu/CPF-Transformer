@@ -3,9 +3,11 @@
 brake_model = dict(type='BrakeModel', in_features=10, n_class=1, hidden=1024)
 model = brake_model
 
-# loss
-brake_loss = dict(type='BCELoss')
-loss = brake_loss
+# batch process
+batch_process = dict(
+    type="BrakeBatchProcess",
+    loss_cls=dict(type='BCELoss')
+)
 
 # dataset and dataloader
 # dataset_type = 'BrakeDataset'
