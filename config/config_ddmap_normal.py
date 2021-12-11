@@ -1,7 +1,7 @@
 # experiments
 exp_type = 'BaseExp'
 
-work_dir = './work' # log and checkpoint dir
+work_dir = './work/test1/' # log and checkpoint dir
 
 # dataset and dataloader
 # dataset_type = 'BrakeDataset'
@@ -15,6 +15,11 @@ data_provider = dict(
               type='DdmapDataset', 
               data_path='/share12T5/refline/train_data/20211002-204641.txt',
             ),
+            val=dict(
+              type='DdmapDataset', 
+              data_path='/share12T5/refline/test_data/20211002-204641.txt',
+            ),
+ 
            )
 )
 
@@ -30,6 +35,8 @@ batch_process = dict(
     type="DdmapBatchProcess",
     loss_reg=dict(type='SmoothL1Loss')
 )
+
+hooks = [dict(type="DdmapTestHook")]
 
 lr = 1e-3     # learning rate
 optimizer = dict(type='SGD', lr=lr, momentum=0.9, weight_decay=1e-4)
@@ -47,7 +54,7 @@ log_config = dict(
 
 
 # training related
-total_epochs = 10
+total_epochs = 1
 # using StepLrUpdaterHook: https://github.com/open-mmlab/mmcv/blob/13888df2aa22a8a8c604a1d1e6ac1e4be12f2798/mmcv/runner/hooks/lr_updater.py#L167
 
 

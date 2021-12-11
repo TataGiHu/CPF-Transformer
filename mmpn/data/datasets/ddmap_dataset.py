@@ -16,6 +16,7 @@ class DdmapDataset(Dataset):
 
     self.datas_input = []    
     self.gts_input = []
+    self.meta = []
 
     for data in data_raw: 
       data_json = json.loads(data)
@@ -24,11 +25,16 @@ class DdmapDataset(Dataset):
       data_input = []
       for frame_lane in n_frame_lanes:
         data_input.extend(frame_lane) 
+      if len(data_input) == 0:
+        continue
       self.datas_input.append(data_input)
 
       gt = data_json['gt']
       self.gts_input.append(gt)
-  
+
+      ts = data_json["ts"]
+      self.meta.append(ts)
+
   def __len__(self):
     return len(self.datas_input)
 
@@ -37,7 +43,11 @@ class DdmapDataset(Dataset):
     y = np.array(self.gts_input[idx], dtype=np.float32) # just for interface placeholder        
     y = np.expand_dims(y, axis = 0)
 
-    return x, y
+    meta = np.array(self.meta[idx], dtype=np.int64) # just for interface placeholder        
+    meta = np.expand_dims(meta, axis = 0)
+
+
+    return x, y, meta
     
     
     

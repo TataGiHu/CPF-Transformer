@@ -16,7 +16,7 @@ from mmcv.runner import get_dist_info, DistSamplerSeedHook, build_optimizer
 from mmcv.runner import Runner, save_checkpoint
 
 import mmcv
-from ..models.builder import build_batch_process, build_submodel
+from ..models.builder import build_batch_process, build_submodel, build_custom_hook
 
 
 import logging
@@ -41,6 +41,7 @@ class BaseExp:
         
         self.loss = None
         self.batch_process = None
+        self.hooks = []
         
     def build_data_provider(self):
         if self.dp is not None:
@@ -54,6 +55,7 @@ class BaseExp:
             return self.model
         
         self.model = build_submodel(self.cfg.model)
+
         ###########################################
    
     def build_batch_process(self):
@@ -61,7 +63,13 @@ class BaseExp:
             return self.batch_process
        
         self.batch_process = build_batch_process(self.cfg.batch_process)
-    
+    def build_hook(self):
+        if "hooks" not in self.cfg:
+          return 
+
+        for hook in self.cfg.hooks:
+          self.hooks.append(build_custom_hook(hook))
+
     def build_optimizer(self):
         if self.optimizer is not None:
             return self.optimizer
@@ -102,7 +110,6 @@ class BaseExp:
         
         # Step 3) build model
         self.build_model()
-        
         device_nums = torch.cuda.device_count()
         device = range(device_nums)
         if dist:
@@ -114,6 +121,7 @@ class BaseExp:
                 find_unused_parameters=find_unused_parameters)
         else:
             self.model = MMDataParallel(self.model.cuda(), device_ids=device)
+
 
         # Step 4) build optimizer, scheduler
         self.build_optimizer()
@@ -154,6 +162,58 @@ class BaseExp:
         with torch.autograd.detect_anomaly():
             runner.run(self.dp.get_loaders(stages), self.cfg.workflow, self.cfg.total_epochs)
 
+
+
+    def test(self, ckpt_file, dist=False):
+        
+        # Step 1) build pipeline scheduler assert
+        #self.build_pipeline_scheduler()
+      
+        # Step 2) build data
+        assert "val" in self.cfg.data_provider.stages 
+
+        self.build_data_provider()
+
+        stages = ['val']
+        self.dp.build_loaders(stages=stages, dist=dist)
+        
+        # Step 3) build model
+        self.build_model()
+        
+        device_nums = torch.cuda.device_count()
+        device = range(device_nums)
+        if dist:
+            find_unused_parameters = self.cfg.get('find_unused_parameters', True)
+            self.model = MMDistributedDataParallel( # 
+                self.model.cuda(),
+                device_ids=[torch.cuda.current_device()],
+                broadcast_buffers=False,
+                find_unused_parameters=find_unused_parameters)
+        else:
+            self.model = MMDataParallel(self.model.cuda(), device_ids=device)
+
+        # Step 5) build runner
+        #######################################
+
+        self.build_batch_process()
+
+        runner = MRunner(
+            model=self.model,
+            batch_processor=self.batch_process,
+            work_dir=self.cfg.work_dir,
+            logger=self.logger,
+        )
+
+        self.build_hook()
+        for hook in self.hooks:
+          runner.register_hook(hook)
+
+        if dist:
+            runner.register_hook(DistSamplerSeedHook())
+        runner.load_checkpoint(ckpt_file)
+
+        # Step 6) run
+        runner.val(self.dp.get_loaders(stages)[0])
 
 
 
