@@ -7,16 +7,16 @@ work_dir = './work/test1/' # log and checkpoint dir
 # dataset_type = 'BrakeDataset'
 data_provider = dict(
   type='DataLoader',
-  samples_per_gpu=1,
+  samples_per_gpu=50,
   workers_per_gpu=0,
   
   stages = dict(
             train=dict(
-              type='DdmapDataset', 
+              type='DdmapDatasetDC', 
               data_path='/share12T5/refline/train_data/20211002-204641.txt',
             ),
             val=dict(
-              type='DdmapDataset', 
+              type='DdmapDatasetDC', 
               data_path='/share12T5/refline/test_data/20211002-204641.txt',
             ),
  
@@ -32,8 +32,11 @@ model = dict(type='DdmapModel')
 # batch process
 # batch process
 batch_process = dict(
-    type="DdmapBatchProcess",
-    loss_reg=dict(type='SmoothL1Loss')
+    type="DdmapBatchProcessDC",
+    loss_reg=dict(
+      type='SmoothL1Loss',
+    ),
+    weight=[1,100,100]
 )
 
 hooks = [dict(type="DdmapTestHook")]
@@ -54,7 +57,7 @@ log_config = dict(
 
 
 # training related
-total_epochs = 1
+total_epochs = 10
 # using StepLrUpdaterHook: https://github.com/open-mmlab/mmcv/blob/13888df2aa22a8a8c604a1d1e6ac1e4be12f2798/mmcv/runner/hooks/lr_updater.py#L167
 
 

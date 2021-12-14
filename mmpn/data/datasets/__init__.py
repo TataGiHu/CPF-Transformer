@@ -1,6 +1,7 @@
 from .brake_dataset import BrakeDataset
-from .ddmap_dataset import DdmapDataset
+from .ddmap_dataset import * 
+
 __all__ = [
     'BrakeDataset',
-    'DdmapDataset'
+    'DdmapDataset','DdmapDatasetDC',
 ]

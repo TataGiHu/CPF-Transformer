@@ -57,10 +57,10 @@ class DataLoader(BaseProvider):
             from .builder import bulid_dataset, build_dataloader
             dataset = bulid_dataset(cfg) #, dict(test_mode=True) if not stage.startswith('train') else None)
    
-            samples_per_gpu = self.samples_per_gpu if stage.startswith('train') else 1
+            #samples_per_gpu = self.samples_per_gpu if stage.startswith('train') else 1
             
             dataloader = build_dataloader(dataset,
-                                samples_per_gpu,
+                                self.samples_per_gpu,
                                 self.workers_per_gpu,
                                 num_gpus=1,
                                 dist=dist,
