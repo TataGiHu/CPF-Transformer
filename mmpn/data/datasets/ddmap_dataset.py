@@ -31,10 +31,10 @@ class DdmapDatasetDC(Dataset):
         continue
       self.datas_input.append(data_input)
 
-      gt = data_json['gt']
+      gt = data_json['gt'][0]
       self.gts_input.append(gt)
 
-      ts = data_json["ts"]
+      ts = data_json["ts"]["egopose"]
       self.meta.append(ts)
 
   def __len__(self):

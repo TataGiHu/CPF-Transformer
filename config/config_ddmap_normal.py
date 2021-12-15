@@ -7,17 +7,17 @@ work_dir = './work/test1/' # log and checkpoint dir
 # dataset_type = 'BrakeDataset'
 data_provider = dict(
   type='DataLoader',
-  samples_per_gpu=50,
+  samples_per_gpu=20,
   workers_per_gpu=0,
   
   stages = dict(
             train=dict(
               type='DdmapDatasetDC', 
-              data_path='/share12T5/refline/train_data/20211002-204641.txt',
+              data_path='/share12T5/refline/train_data/PLAFB9216_event_HNP_wm_sharp_turning_filter_20211117-203333_0.txt',
             ),
             val=dict(
               type='DdmapDatasetDC', 
-              data_path='/share12T5/refline/test_data/20211002-204641.txt',
+              data_path='/share12T5/refline/train_data/PLAFB9216_event_HNP_wm_sharp_turning_filter_20211117-203333_0.txt',
             ),
  
            )
@@ -36,10 +36,11 @@ batch_process = dict(
     loss_reg=dict(
       type='SmoothL1Loss',
     ),
-    weight=[1,100,100]
+    loss_process_type = "normal",  # "normal", "weight", "points"
+    weight=[1,100,1000]
 )
 
-hooks = [dict(type="DdmapTestHook")]
+hooks = [dict(type="DdmapTestCoeffHook")]
 
 lr = 1e-3     # learning rate
 optimizer = dict(type='SGD', lr=lr, momentum=0.9, weight_decay=1e-4)
