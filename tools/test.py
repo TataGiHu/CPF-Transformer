@@ -41,7 +41,7 @@ def main():
 
     ckpt_file = args.ckpt_file
     if not ckpt_file:
-      ckpt_file = os.path.join(cfg.work_dir, "latest.pth")
+      ckpt_file = os.path.join(cfg.work_dir, "epoch_439.pth")
     print("load from ckpt_file: {}".format(ckpt_file))
     exp.test(ckpt_file=ckpt_file, dist=eval(args.dist))
     
