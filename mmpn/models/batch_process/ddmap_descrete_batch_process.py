@@ -150,7 +150,7 @@ class DdmapDescreteBatchProcess(nn.Module):
 
       mask = torch.full((input_data.shape[0], input_data.shape[1]), False, dtype=torch.bool)
 
-      input_data = input_data.cuda(non_blocking=True)
+      input_data = input_data.xuda(non_blocking=True)
       mask = mask.cuda(non_blocking=True)
       label = label.cuda(non_blocking=True)
 

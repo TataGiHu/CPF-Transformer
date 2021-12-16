@@ -35,8 +35,11 @@ class DdmapDescreteDatasetDC(Dataset):
 
       gt = data_json['gt']
       gt_input = []
-      for lane_point in gt:
-        gt_input.append(lane_point[1])
+      for lane in gt:
+        if len(lane) == 0:
+              continue
+        for lane_point in lane:
+          gt_input.append(lane_point[1])
       self.gts_input.append(gt_input)
 
       ts = data_json["ts"]
@@ -93,13 +96,21 @@ class DdmapDescreteDataset(Dataset):
       n_frame_lanes = dt["lanes"]
       data_input = []
       for frame_lane in n_frame_lanes:
-        data_input.extend(frame_lane) 
+        if len(frame_lane) == 0:
+          continue
+        data_input.extend(frame_lane[0]) 
       if len(data_input) == 0:
         continue
       self.datas_input.append(data_input)
 
       gt = data_json['gt']
-      self.gts_input.append(gt)
+      gt_input = []
+      for lane in gt:
+        if len(lane) == 0:
+              continue
+        for lane_point in lane:
+          gt_input.append(lane_point[1])
+      self.gts_input.append(gt_input)
 
       ts = data_json["ts"]
       self.meta.append(ts)

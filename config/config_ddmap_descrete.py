@@ -13,11 +13,11 @@ data_provider = dict(
   stages = dict(
             train=dict(
               type='DdmapDescreteDatasetDC', 
-              data_path='/workspace/resource/train/1215.txt',
+              data_path='/workspace/resource/train/PLAFB3682_event_dbw_disabled_20211203-165409_0_points.txt',
             ),
             val=dict(
               type='DdmapDescreteDatasetDC', 
-              data_path='/workspace/resource/train/1215.txt',
+              data_path='/workspace/resource/train/PLAFB3682_event_dbw_disabled_20211203-165409_0_points.txt',
             ),
  
            )
@@ -42,7 +42,8 @@ batch_process = dict(
 hooks = [dict(type="DdmapDescreteTestHook")]
 
 lr = 1e-2     # learning rate
-optimizer = dict(type='SGD', lr=lr, momentum=0.9, weight_decay=1e-4)
+# optimizer = dict(type='SGD', lr=lr, momentum=0.9, weight_decay=1e-4)
+optimizer = dict(type="AdamW", lr=lr,weight_decay=1e-2)
 
 
 lr_config = dict(policy='step', step=[1, 3], gamma=0.1) 
@@ -57,7 +58,7 @@ log_config = dict(
 
 
 # training related
-total_epochs = 1000
+total_epochs = 2000
 # using StepLrUpdaterHook: https://github.com/open-mmlab/mmcv/blob/13888df2aa22a8a8c604a1d1e6ac1e4be12f2798/mmcv/runner/hooks/lr_updater.py#L167
 
 
