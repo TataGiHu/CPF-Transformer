@@ -19,7 +19,9 @@ class DdmapDescreteBatchProcessDC(nn.Module):
       print("kwargs:", kwargs)
 
       assert "loss_reg" in kwargs
+      assert "bce_loss_reg" in kwargs
       self.loss = build_loss(kwargs["loss_reg"])
+      self.classification_loss = build_loss(kwargs["bce_loss_reg"])
       self.weight = kwargs["weight"] 
    
       self.weight_device = torch.Tensor(self.weight).cuda(non_blocking=True)
@@ -27,15 +29,24 @@ class DdmapDescreteBatchProcessDC(nn.Module):
     def __call__(self, model, data, train_mode):
 
         #input_data, mask, label, meta = self.collate_fn(data)
-        input_data, mask, label, meta = collate_fn(data)
+        input_data, mask, label, classes, meta = collate_fn(data)
 
         pred = model(input_data, mask)
 
         outputs = dict()
 
         if train_mode:
-            loss = self.loss(pred, label, self.weight_device)
-
+            # zero out predictions where the lane does not exist 
+            pred[0][:,:,0:20] *= classes[:,:,0:1]
+            pred[0][:,:,20:40] *= classes[:,:,1:2]
+            pred[0][:,:,40:60] *= classes[:,:,2:3]
+            
+            loss = self.loss(pred[0], label, self.weight_device)
+            # left_lane_loss = classes[:,:,0] * self.loss() 
+            # TODO: Tune the weighting between classification loss and prediction loss
+            classification_loss = self.classification_loss(pred[1], classes)
+            
+            loss = loss + classification_loss
             log_vars = OrderedDict()
             log_vars['loss'] = loss.item()
             outputs = dict(loss=loss, log_vars=log_vars, num_samples=input_data.size(0))
@@ -114,21 +125,27 @@ class DdmapDescreteTestHook(Hook):
 
     def after_val_iter(self, runner): 
       outputs = runner.outputs
-      pred = outputs['pred'].cpu().numpy().tolist() 
+      pred = outputs['pred'][0].cpu().numpy().tolist() 
+      classification = outputs['pred'][1].cpu().numpy().tolist() 
       meta = outputs['meta'].cpu().numpy().tolist()
 
       prediction = []
       frame_lanes = []
+      current_lane = []
       for prediction_lane_y in pred:
-            current_lane = []
             for i, prediction_point_y in enumerate(prediction_lane_y[0]):
-                  current_lane.append([-20 + 5 * i, prediction_point_y])
-            frame_lanes.append(current_lane)
-      prediction.append(frame_lanes)
+                  current_lane.append([-20 + 5 * (i % 20), prediction_point_y])
+                  if ((i + 1) % 20) == 0:
+                        frame_lanes.append(current_lane)
+                        current_lane = []
+                        continue
+            prediction.append(frame_lanes)
+            frame_lanes = []
+            # frame_lanes.append(current_lane)
                   
             
-      for batch_pred, me in zip(prediction[0], meta):
-        res = json.dumps(dict(pred=[batch_pred],ts=me[0][1]))
+      for batch_pred, batch_class,  me in zip(prediction, classification, meta):
+        res = json.dumps(dict(pred=batch_pred, score=batch_class[0], ts=me[0][1]))
         self.result.append(res)
       pass
 

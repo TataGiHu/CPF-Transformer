@@ -1,4 +1,7 @@
 # experiments
+from mmpn.models.losses import bce_loss
+
+
 exp_type = 'BaseExp'
 
 work_dir = './work/test1/' # log and checkpoint dir
@@ -7,16 +10,16 @@ work_dir = './work/test1/' # log and checkpoint dir
 # dataset_type = 'BrakeDataset'
 data_provider = dict(
   type='DataLoader',
-  samples_per_gpu=50,
+  samples_per_gpu=16,
   workers_per_gpu=0,
   
   stages = dict(
             train=dict(
-              type='DdmapDescreteDatasetDC', 
-              data_path='/workspace/resource/train',
+              type='DdmapDescreteDatasetWithRoadEdge', 
+              data_path='/workspace/resource/train/debug',
             ),
             val=dict(
-              type='DdmapDescreteDatasetDC', 
+              type='DdmapDescreteDatasetWithRoadEdge', 
               data_path='/workspace/resource/test/',
             ),
  
@@ -36,12 +39,16 @@ batch_process = dict(
     loss_reg=dict(
       type='L2Loss',
     ),
-    weight= [1 for i in range(20)]
+    bce_loss_reg = dict(
+      type="BCELoss"
+    ),
+    # Current centerline has the largest weight
+    weight= [1 for i in range(20)] + [10 for i in range(20)] + [1 for i in range(20)]
 )
 
 hooks = [dict(type="DdmapDescreteTestHook")]
 
-lr = 1e-2     # learning rate
+lr = 1e-2    # learning rate
 # optimizer = dict(type='SGD', lr=lr, momentum=0.9, weight_decay=1e-4)
 optimizer = dict(type="AdamW", lr=lr,weight_decay=1e-2)
 
@@ -58,7 +65,7 @@ log_config = dict(
 
 
 # training related
-total_epochs = 200
+total_epochs = 6000
 # using StepLrUpdaterHook: https://github.com/open-mmlab/mmcv/blob/13888df2aa22a8a8c604a1d1e6ac1e4be12f2798/mmcv/runner/hooks/lr_updater.py#L167
 
 
@@ -67,8 +74,9 @@ total_epochs = 200
 log_level = 'INFO'
 
 # resume_from = None
-resume_from = "/workspace/mhw_train/work/test1/epoch_2474.pth"
-load_from = None 
+resume_from = "/workspace/mhw_train/work/test1/epoch_4000.pth"
+load_from = None
+# load_from = "/workspace/mhw_train/work/test1/epoch_1000.pth"
 
 
 # DDP related

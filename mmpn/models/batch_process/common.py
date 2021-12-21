@@ -39,6 +39,9 @@ def collate_fn(batch) :
    for i in range(len(batch_per_gpu)):
      labels.append(batch_per_gpu[i]['y'])
 
+   classes = []
+   for i in range(len(batch_per_gpu)):
+      classes.append(batch_per_gpu[i]["existence"])
    metas = []
    for i in range(len(batch_per_gpu)):
      metas.append(batch_per_gpu[i]['meta'])
@@ -46,6 +49,7 @@ def collate_fn(batch) :
    input_datas = default_collate(padded_samples).cuda()
    masks = default_collate(padded_masks).cuda()
    labels = default_collate(labels).cuda()
+   classes = default_collate(classes).cuda()
    metas = default_collate(metas)
 
-   return input_datas, masks, labels, metas
+   return input_datas, masks, labels, classes, metas
