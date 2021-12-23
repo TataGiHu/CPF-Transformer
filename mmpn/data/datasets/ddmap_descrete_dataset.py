@@ -116,10 +116,22 @@ class DdmapDescreteDatasetWithRoadEdge(Dataset):
           n_frame_lanes = dt["lanes"]
           n_frame_road_edges = dt["road_edges"]
           data_input = []
-          for i,frame_lane in enumerate(n_frame_lanes):
-            if len(frame_lane)==0 or len(n_frame_road_edges[i]) == 0:
-              continue
-            data_input.extend(frame_lane[0] + n_frame_road_edges[i][0]) 
+          
+          assert len(n_frame_lanes) == len(n_frame_road_edges)
+          for i in range(len(n_frame_lanes)):
+              if len(n_frame_lanes[i])==0 and len(n_frame_road_edges[i]) == 0:
+                continue
+              elif len(n_frame_lanes[i]) == 0:
+                for point in n_frame_road_edges[i]:
+                    data_input.extend(point)
+              elif len(n_frame_road_edges[i]) == 0:
+                for point in n_frame_lanes[i]:
+                    data_input.extend(point)
+              else:
+                for point in n_frame_lanes[i]:
+                    data_input.extend(point)
+                for point in n_frame_road_edges[i]:
+                    data_input.extend(point)
           if len(data_input) == 0:
             continue
           self.datas_input.append(data_input)

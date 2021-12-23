@@ -16,7 +16,7 @@ data_provider = dict(
   stages = dict(
             train=dict(
               type='DdmapDescreteDatasetWithRoadEdge', 
-              data_path='/workspace/resource/train/debug',
+              data_path='/workspace/resource/train/',
             ),
             val=dict(
               type='DdmapDescreteDatasetWithRoadEdge', 
@@ -65,7 +65,7 @@ log_config = dict(
 
 
 # training related
-total_epochs = 6000
+total_epochs = 17000 
 # using StepLrUpdaterHook: https://github.com/open-mmlab/mmcv/blob/13888df2aa22a8a8c604a1d1e6ac1e4be12f2798/mmcv/runner/hooks/lr_updater.py#L167
 
 
@@ -74,7 +74,8 @@ total_epochs = 6000
 log_level = 'INFO'
 
 # resume_from = None
-resume_from = "/workspace/mhw_train/work/test1/epoch_4000.pth"
+resume_from = "/workspace/mhw_train/work/test1/epoch_15000.pth"
+
 load_from = None
 # load_from = "/workspace/mhw_train/work/test1/epoch_1000.pth"
 
