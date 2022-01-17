@@ -8,6 +8,7 @@ import torch
 import json,os
 from torch.utils.data.dataloader import default_collate
 from .common import collate_fn
+from .common import collate_fn_three_queries
 
 
 
@@ -54,6 +55,48 @@ class DdmapDescreteBatchProcessDC(nn.Module):
         else:
             outputs = dict(pred=pred, meta=meta)
             # calc acc ...        
+        return outputs
+
+
+@BATCH_PROCESS.register_module()
+class DdmapDescreteBatchProcessDCThreeQueries(nn.Module):
+    
+    def __init__(self, **kwargs):
+      super().__init__()
+      print("kwargs:", kwargs)
+
+      assert "loss_reg" in kwargs
+      assert "bce_loss_reg" in kwargs
+      self.loss = build_loss(kwargs["loss_reg"])
+      self.classification_loss = build_loss(kwargs["bce_loss_reg"])
+      self.weight = kwargs["weight"] 
+   
+      self.weight_device = torch.Tensor(self.weight).cuda(non_blocking=True)
+
+    def __call__(self, model, data, train_mode):
+
+        input_data, mask, label, classes, meta = collate_fn_three_queries(data)
+        pred = model(input_data, mask)
+        outputs = dict()
+
+        if train_mode:
+
+            pred[0][:,0] *= classes[:,:,0]
+            pred[0][:,1] *= classes[:,:,1]
+            pred[0][:,2] *= classes[:,:,2]
+            loss = self.loss(pred[0], label, self.weight_device)
+
+            classes_reshape = classes.view(-1,3,1)
+            classification_loss = self.classification_loss(pred[1], classes_reshape)
+            loss = loss + classification_loss
+            log_vars = OrderedDict()
+            log_vars['loss'] = loss.item()
+            outputs = dict(loss=loss, log_vars=log_vars, num_samples=input_data.size(0))
+            
+        else:
+            
+            outputs = dict(pred=pred, meta=meta)
+ 
         return outputs
 
 
@@ -146,6 +189,51 @@ class DdmapDescreteTestHook(Hook):
             
       for batch_pred, batch_class,  me in zip(prediction, classification, meta):
         res = json.dumps(dict(pred=batch_pred, score=batch_class[0], ts=me[0][1]))
+        self.result.append(res)
+      pass
+
+    def after_val_epoch(self, runner):
+
+      work_dir = runner.work_dir
+      file_name = os.path.join(work_dir, "preds.txt")
+      with open(file_name, 'w') as fout:
+        fout.write(json.dumps(dict(type="points")) + "\n")
+        for res in self.result:
+          fout.write(res+"\n")
+      print("val results save to {}".format(file_name))
+      
+      
+      
+@CUSTOM_HOOKS.register_module()
+class DdmapDescreteTestHookThreeQueries(Hook):
+    def __init__(self):
+      self.result = []
+      pass
+
+    def after_val_iter(self, runner): 
+      outputs = runner.outputs
+      pred = outputs['pred'][0].cpu().numpy().tolist() 
+      classification = outputs['pred'][1].cpu().numpy().tolist() 
+      meta = outputs['meta'].cpu().numpy().tolist()
+
+      prediction = []
+      frame_lanes = []
+      current_lane = []
+
+      for prediction_frame_y in pred:
+            for prediction_lane_y in prediction_frame_y:
+                  for i, prediction_point_y in enumerate(prediction_lane_y):
+                        current_lane.append([-20 + 5 * (i%20), prediction_point_y])
+                  frame_lanes.append(current_lane)
+                  current_lane = []
+            prediction.append(frame_lanes)
+            frame_lanes = []
+            
+      for batch_pred, batch_class,  me in zip(prediction, classification, meta):
+        class_reshape = []
+        for item in batch_class:
+              class_reshape+=item
+        res = json.dumps(dict(pred=batch_pred, score=class_reshape, ts=me[0][1]))
         self.result.append(res)
       pass
 
