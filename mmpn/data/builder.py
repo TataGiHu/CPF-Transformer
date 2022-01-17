@@ -84,7 +84,7 @@ def build_dataloader(
         pin_memory=False,
         worker_init_fn=init_fn,
         shuffle=shuffle,
-        drop_last=True,
+        drop_last=False,
         **kwargs)
 
     return data_loader

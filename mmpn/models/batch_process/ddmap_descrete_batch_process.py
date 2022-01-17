@@ -8,7 +8,7 @@ import torch
 import json,os
 from torch.utils.data.dataloader import default_collate
 from .common import collate_fn
-from .common import collate_fn_three_queries
+
 
 
 
@@ -75,7 +75,7 @@ class DdmapDescreteBatchProcessDCThreeQueries(nn.Module):
 
     def __call__(self, model, data, train_mode):
 
-        input_data, mask, label, classes, meta = collate_fn_three_queries(data)
+        input_data, mask, label, classes, meta = collate_fn(data)
         pred = model(input_data, mask)
         outputs = dict()
 
@@ -186,7 +186,7 @@ class DdmapDescreteTestHook(Hook):
             frame_lanes = []
             # frame_lanes.append(current_lane)
                   
-            
+      
       for batch_pred, batch_class,  me in zip(prediction, classification, meta):
         res = json.dumps(dict(pred=batch_pred, score=batch_class[0], ts=me[0][1]))
         self.result.append(res)
@@ -228,7 +228,7 @@ class DdmapDescreteTestHookThreeQueries(Hook):
                   current_lane = []
             prediction.append(frame_lanes)
             frame_lanes = []
-            
+                   
       for batch_pred, batch_class,  me in zip(prediction, classification, meta):
         class_reshape = []
         for item in batch_class:

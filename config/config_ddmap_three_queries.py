@@ -16,11 +16,11 @@ data_provider = dict(
   stages = dict(
             train=dict(
               type='DdmapDescreteDatasetWithRoadEdgeAndDashedAttribute', 
-              data_path='/workspace/train_data_dir',
+              data_path='/home/mingquan/train_data_dir',
             ),
             val=dict(
               type='DdmapDescreteDatasetWithRoadEdgeAndDashedAttribute', 
-              data_path='/workspace/test_data_dir',
+              data_path='/home/mingquan/test_on_train',
             ),
  
            )
