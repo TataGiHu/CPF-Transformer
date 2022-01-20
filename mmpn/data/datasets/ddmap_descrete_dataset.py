@@ -167,6 +167,8 @@ class DdmapDescreteDatasetWithRoadEdgeAndDashedAttribute(Dataset):
     self.datas_input = []    
     self.gts_input = []
     self.meta = []
+    self.output_mask = []
+    self.furthest_point_mark = []
     for file in os.listdir(data_path):
       if ".txt" not in file:
         continue
@@ -177,15 +179,15 @@ class DdmapDescreteDatasetWithRoadEdgeAndDashedAttribute(Dataset):
 
         for data in data_raw: 
           data_json = json.loads(data)
+          
           gt = data_json['gt']
           gt_input = []
           class_input = []
           for lane in gt:
             if len(lane) == 0:
                   class_input.append(0)
-                  for i in range(20):
+                  for i in range(24):
                         gt_input.append(0)
-                  # gt_input.append([0 for i in range(20)])
                   continue
             class_input.append(1)
             for lane_point in lane:
@@ -200,6 +202,7 @@ class DdmapDescreteDatasetWithRoadEdgeAndDashedAttribute(Dataset):
           n_frame_road_edges = dt["road_edges"]
           data_input = []
           data_len = 100
+          furthest_point_x = -float('inf')
           assert len(n_frame_lanes) == len(n_frame_road_edges)
           ##########################################################################
           #input unit: lane
@@ -220,6 +223,8 @@ class DdmapDescreteDatasetWithRoadEdgeAndDashedAttribute(Dataset):
                 for i in range(data_len):
                   if i<len(lane["points"]):
                     cur_lane.extend(lane["points"][i])
+                    if lane["points"][i][0] > furthest_point_x:
+                      furthest_point_x = lane["points"][i][0]
                   else:
                     cur_lane.extend([0.,0.])
                 data_input.append(cur_lane)
@@ -239,10 +244,31 @@ class DdmapDescreteDatasetWithRoadEdgeAndDashedAttribute(Dataset):
           if len(data_input) == 0:
             continue
           self.datas_input.append(data_input)
-              
+             
           ts = data_json["ts"]
           self.meta.append(ts)
-
+          
+          #generate output mask
+          output_mask_cur = []
+          output_mask_begin = -20
+          output_mask_end = 100
+          output_mask_step = 5
+          furthest_mark = output_mask_begin
+          for i in range(output_mask_begin, output_mask_end, output_mask_step):
+            if furthest_point_x <= i:
+              furthest_mark = i
+              break
+          num_reserve = int((furthest_mark-output_mask_begin)/output_mask_step+1)
+          num_discard = int((output_mask_end-output_mask_begin)/output_mask_step-num_reserve)
+          output_mask_unit = [1.]*num_reserve
+          discard_mask = [0.]*num_discard
+          output_mask_unit.extend(discard_mask)
+          for i in range(len(gt)):
+            output_mask_cur.append(output_mask_unit)
+          self.output_mask.append(output_mask_cur)
+          #restore the furthest lane length
+          self.furthest_point_mark.append(num_reserve)
+          
   def __len__(self):
     return len(self.datas_input)
 
@@ -250,23 +276,27 @@ class DdmapDescreteDatasetWithRoadEdgeAndDashedAttribute(Dataset):
     x = np.array(self.datas_input[idx], dtype=np.float32)
     y = np.array(self.gts_input[idx][0], dtype=np.float32) # just for interface placeholder  
     existence = np.array(self.gts_input[idx][1], dtype=np.float32)     #Determine if a centerline exists
-    y = np.expand_dims(y, axis = 0).reshape(-1,20)
+    y = np.expand_dims(y, axis = 0).reshape(-1,24)
     existence = np.expand_dims(existence, axis=0)
-
     meta_dict = self.meta[idx]
     meta = np.array([meta_dict['wm'], meta_dict['egopose'], meta_dict['vision']], dtype=np.int64) # just for interface placeholder        
     meta = np.expand_dims(meta, axis = 0)
-
+    output_mask = np.array(self.output_mask[idx], dtype=np.float32)
+    furthest_point_mark = np.array(self.furthest_point_mark[idx], dtype=np.float32)
     x = torch.from_numpy(x)
     y = torch.from_numpy(y)
     existence = torch.from_numpy(existence)
     meta = torch.from_numpy(meta)
-
+    output_mask = torch.from_numpy(output_mask)
+    furthest_point_mark = torch.from_numpy(furthest_point_mark)
     data = {
       "x": x,
       "y": y,
       "existence": existence,
-      "meta": meta
+      "meta": meta,
+      "output_mask": output_mask,
+      "furthest_point_mark": furthest_point_mark
+      
     }
     data = DataContainer(data)
     return data

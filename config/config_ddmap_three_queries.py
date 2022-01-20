@@ -10,17 +10,17 @@ work_dir = './work/test1/' # log and checkpoint dir
 # dataset_type = 'BrakeDataset'
 data_provider = dict(
   type='DataLoader',
-  samples_per_gpu=200,
+  samples_per_gpu=32,
   workers_per_gpu=0,
   
   stages = dict(
             train=dict(
               type='DdmapDescreteDatasetWithRoadEdgeAndDashedAttribute', 
-              data_path='/home/mingquan/train_data_dir',
+              data_path='/home/mingquan/test_data_now',
             ),
             val=dict(
               type='DdmapDescreteDatasetWithRoadEdgeAndDashedAttribute', 
-              data_path='/home/mingquan/test_on_train',
+              data_path='/home/mingquan/test_data_now',
             ),
  
            )
@@ -43,7 +43,7 @@ batch_process = dict(
       type="BCELoss"
     ),
     # Current centerline has the largest weight
-    weight= [[1 for i in range(20)] , [1 for i in range(20)] , [1 for i in range(20)]]
+    weight= [[1 for i in range(24)] , [1 for i in range(24)] , [1 for i in range(24)]]
 )
 
 hooks = [dict(type="DdmapDescreteTestHookThreeQueries")]

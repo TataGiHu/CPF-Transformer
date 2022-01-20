@@ -8,7 +8,7 @@ import torch
 import json,os
 from torch.utils.data.dataloader import default_collate
 from .common import collate_fn
-
+from .common import collate_fn_output_mask
 
 
 
@@ -75,17 +75,17 @@ class DdmapDescreteBatchProcessDCThreeQueries(nn.Module):
 
     def __call__(self, model, data, train_mode):
 
-        input_data, mask, label, classes, meta = collate_fn(data)
+        input_data, mask, label, classes, meta, output_mask, furthest_point_mark= collate_fn_output_mask(data)
         pred = model(input_data, mask)
         outputs = dict()
-
+        
         if train_mode:
-
             pred[0][:,0] *= classes[:,:,0]
             pred[0][:,1] *= classes[:,:,1]
             pred[0][:,2] *= classes[:,:,2]
-            loss = self.loss(pred[0], label, self.weight_device)
-
+            pred_on_mask = pred[0] * output_mask
+            label_on_mask = label * output_mask
+            loss = self.loss(pred_on_mask, label_on_mask, self.weight_device)
             classes_reshape = classes.view(-1,3,1)
             classification_loss = self.classification_loss(pred[1], classes_reshape)
             loss = loss + classification_loss
@@ -94,9 +94,7 @@ class DdmapDescreteBatchProcessDCThreeQueries(nn.Module):
             outputs = dict(loss=loss, log_vars=log_vars, num_samples=input_data.size(0))
             
         else:
-            
-            outputs = dict(pred=pred, meta=meta)
- 
+            outputs = dict(pred=pred, meta=meta, furthest_point_mark=furthest_point_mark)
         return outputs
 
 
@@ -215,20 +213,22 @@ class DdmapDescreteTestHookThreeQueries(Hook):
       pred = outputs['pred'][0].cpu().numpy().tolist() 
       classification = outputs['pred'][1].cpu().numpy().tolist() 
       meta = outputs['meta'].cpu().numpy().tolist()
-
+      furthest_point_mark = outputs['furthest_point_mark'].cpu().numpy().tolist()
       prediction = []
       frame_lanes = []
       current_lane = []
 
-      for prediction_frame_y in pred:
+      for k,prediction_frame_y in enumerate(pred):
             for prediction_lane_y in prediction_frame_y:
                   for i, prediction_point_y in enumerate(prediction_lane_y):
-                        current_lane.append([-20 + 5 * (i%20), prediction_point_y])
+                      if i < furthest_point_mark[k]:
+                        current_lane.append([-20 + 5 * (i%24), prediction_point_y])
                   frame_lanes.append(current_lane)
                   current_lane = []
             prediction.append(frame_lanes)
             frame_lanes = []
-                   
+              
+               
       for batch_pred, batch_class,  me in zip(prediction, classification, meta):
         class_reshape = []
         for item in batch_class:
