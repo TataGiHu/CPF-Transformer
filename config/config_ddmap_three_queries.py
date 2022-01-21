@@ -16,11 +16,11 @@ data_provider = dict(
   stages = dict(
             train=dict(
               type='DdmapDescreteDatasetWithRoadEdgeAndDashedAttribute', 
-              data_path='/home/mingquan/test_data_now',
+              data_path='/home/mingquan/train_data_dir',
             ),
             val=dict(
               type='DdmapDescreteDatasetWithRoadEdgeAndDashedAttribute', 
-              data_path='/home/mingquan/test_data_now',
+              data_path='/home/mingquan/test_data_dir',
             ),
  
            )
@@ -43,7 +43,7 @@ batch_process = dict(
       type="BCELoss"
     ),
     # Current centerline has the largest weight
-    weight= [[1 for i in range(24)] , [1 for i in range(24)] , [1 for i in range(24)]]
+    weight= [[1 for i in range(25)] , [1 for i in range(25)] , [1 for i in range(25)]]
 )
 
 hooks = [dict(type="DdmapDescreteTestHookThreeQueries")]
@@ -65,7 +65,7 @@ log_config = dict(
 
 
 # training related
-total_epochs = 17000 
+total_epochs = 2000 
 # using StepLrUpdaterHook: https://github.com/open-mmlab/mmcv/blob/13888df2aa22a8a8c604a1d1e6ac1e4be12f2798/mmcv/runner/hooks/lr_updater.py#L167
 
 
@@ -74,7 +74,7 @@ total_epochs = 17000
 log_level = 'INFO'
 
 resume_from = None
-#resume_from = "/workspace/mhw_train/work/test1/latest.pth"
+# resume_from = "/home/mingquan/mhw_train/work/test1/latest.pth"
 
 load_from = None
 # load_from = "/workspace/mhw_train/work/test1/epoch_1000.pth"

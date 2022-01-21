@@ -222,7 +222,7 @@ class DdmapDescreteTestHookThreeQueries(Hook):
             for prediction_lane_y in prediction_frame_y:
                   for i, prediction_point_y in enumerate(prediction_lane_y):
                       if i < furthest_point_mark[k]:
-                        current_lane.append([-20 + 5 * (i%24), prediction_point_y])
+                        current_lane.append([-20 + 5 * (i%25), prediction_point_y])
                   frame_lanes.append(current_lane)
                   current_lane = []
             prediction.append(frame_lanes)

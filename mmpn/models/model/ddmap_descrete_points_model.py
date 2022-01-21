@@ -58,7 +58,7 @@ class DdmapDescreteModelThreeQueries(nn.Module):
                       num_decoder_layers=num_decoder_layers)
     self.query_embed = nn.Embedding(num_queries, hidden_dim) 
     self.class_embed = nn.Linear(hidden_dim, 1)
-    self.lane_point_embed = MLP(hidden_dim, hidden_dim, 24, 3) 
+    self.lane_point_embed = MLP(hidden_dim, hidden_dim, 25, 3) 
 
   def forward(self, src, mask):
     

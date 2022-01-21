@@ -186,7 +186,7 @@ class DdmapDescreteDatasetWithRoadEdgeAndDashedAttribute(Dataset):
           for lane in gt:
             if len(lane) == 0:
                   class_input.append(0)
-                  for i in range(24):
+                  for i in range(25):
                         gt_input.append(0)
                   continue
             class_input.append(1)
@@ -251,10 +251,12 @@ class DdmapDescreteDatasetWithRoadEdgeAndDashedAttribute(Dataset):
           #generate output mask
           output_mask_cur = []
           output_mask_begin = -20
-          output_mask_end = 100
+          output_mask_end = 105
           output_mask_step = 5
           furthest_mark = output_mask_begin
           for i in range(output_mask_begin, output_mask_end, output_mask_step):
+            if furthest_point_x >= 100:
+              furthest_mark = 100
             if furthest_point_x <= i:
               furthest_mark = i
               break
@@ -276,7 +278,7 @@ class DdmapDescreteDatasetWithRoadEdgeAndDashedAttribute(Dataset):
     x = np.array(self.datas_input[idx], dtype=np.float32)
     y = np.array(self.gts_input[idx][0], dtype=np.float32) # just for interface placeholder  
     existence = np.array(self.gts_input[idx][1], dtype=np.float32)     #Determine if a centerline exists
-    y = np.expand_dims(y, axis = 0).reshape(-1,24)
+    y = np.expand_dims(y, axis = 0).reshape(-1,25)
     existence = np.expand_dims(existence, axis=0)
     meta_dict = self.meta[idx]
     meta = np.array([meta_dict['wm'], meta_dict['egopose'], meta_dict['vision']], dtype=np.int64) # just for interface placeholder        
