@@ -8,6 +8,7 @@ END_X = 101
 def combine_mae_results(mae_dict1, mae_dict_2):
     res_dict = {}
     for key in mae_dict1:
+        return 
 
 
 def calculate_lane_mae(lane_true, lane_pred):

@@ -73,8 +73,8 @@ total_epochs = 2000
 # logs and checkpoint
 log_level = 'INFO'
 
-resume_from = None
-# resume_from = "/home/mingquan/mhw_train/work/test1/latest.pth"
+#resume_from = None
+resume_from = "/home/mingquan/mhw_train/work/test1/latest.pth"
 
 load_from = None
 # load_from = "/workspace/mhw_train/work/test1/epoch_1000.pth"
