@@ -2,6 +2,7 @@ import os.path as osp
 
 import mmcv
 import torch
+torch.multiprocessing.set_sharing_strategy('file_system')
 from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
 from mmcv.runner import Runner, save_checkpoint
 

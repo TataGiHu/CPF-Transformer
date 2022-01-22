@@ -25,9 +25,27 @@ def calculate_lane_interval_mae(lane_true, lane_pred, interval_begin_index):
 
 
 def get_lane_mae_report(lane_true, lane_pred, step_width):
-
+    for i in range(len(lane_true)):
+        for j in range(3):
+            lane_true_length = len(lane_true[i][j])
+            lane_pred_length = len(lane_pred[i][j])
+            lane_true[i][j] += [[0,0]] * (25 - lane_true_length)
+            lane_pred[i][j] += [[0,0]] * (25 - lane_pred_length)
+            if lane_true_length < lane_pred_length:
+                lane_pred[i][j][lane_true_length:] = [[0,0]] * (25 - lane_true_length)
+            elif lane_pred_length < lane_true_length:
+                lane_true[i][j][lane_pred_length:] = [[0,0]] * (25 - lane_pred_length)
+            # if len(lane_true[i][j]) < 25:
+            #     if len(lane_true[i][j]) < len(lane_pred[i][j]):
+            #         lane_pred[i][j][len(lane_true[i][j]):] = [[0,0]]
+            #     lane_true[i][j] += [[0,0]] * (25 - len(lane_true[i][j]))
+            # if len(lane_true[i][j]) > len(lane_pred[i][j]):
+            #     lane_pred[i][j] += [[0,0]] * (len(lane_true[i][j]) - len(lane_pred[i][j]))
+            #     lane_true[i][j][len(lane_pred[i][j])-1:] = [[0,0]] * (25 - len(lane_pred[i][j]) + 1)
     res_dict = {}
-    res_dict["total_mae"] = calculate_lane_mae(lane_true, lane_pred)
+    pred_array = np.array(lane_pred)[:,:,:,1]
+    truth_array = np.array(lane_true)[:,:,:,1]
+    res_dict["total_mae"] = calculate_lane_mae(truth_array.flatten(), pred_array.flatten())
     res_dict["num"] = lane_pred.shape[0]
     for interval_begin_index in range(lane_pred.shape[0]):
         cur_interval_mae = calculate_lane_interval_mae(

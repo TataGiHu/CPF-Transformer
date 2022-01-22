@@ -10,17 +10,17 @@ work_dir = './work/test1/' # log and checkpoint dir
 # dataset_type = 'BrakeDataset'
 data_provider = dict(
   type='DataLoader',
-  samples_per_gpu=32,
-  workers_per_gpu=0,
+  samples_per_gpu=256,
+  workers_per_gpu=26,
   
   stages = dict(
             train=dict(
-              type='DdmapDescreteDatasetWithRoadEdgeAndDashedAttribute', 
-              data_path='/home/mingquan/train_data_dir',
+              type='DdmapDescreteDatasetWithRoadEdgeAndDashedAttributeNew', 
+              data_path='/home/mingquan/splited_data',
             ),
             val=dict(
-              type='DdmapDescreteDatasetWithRoadEdgeAndDashedAttribute', 
-              data_path='/home/mingquan/test_data_dir',
+              type='DdmapDescreteDatasetWithRoadEdgeAndDashedAttributeNew', 
+              data_path='/home/mingquan/splited_data',
             ),
  
            )

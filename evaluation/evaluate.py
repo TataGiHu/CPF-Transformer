@@ -7,11 +7,28 @@ import json
 
 def evaluate(test_data_dir, preds_dir):
     test_data = read_files(test_data_dir)
+    step_width = test_data[0]['gt_scope']['step width']
+    test_gt = []
     for i, data_sample in enumerate(test_data):
         if i == 0:
             continue
-        
-        
+        test_gt.append(data_sample['gt'])
+    print(len(test_gt))
+    
+    pred_data = read_files(preds_dir)
+    
+    pred_res = []
+    pred_score = []
+    
+    for i, pred_sample in enumerate(pred_data):
+        if i==0:
+            continue
+        pred_res.append(pred_sample['pred'])
+        pred_score.append(pred_sample)
+    
+    assert(len(pred_score) == len(pred_res) == len(test_gt))
+    
+    get_lane_mae_report(test_gt, pred_res, step_width)
     return 
 
 

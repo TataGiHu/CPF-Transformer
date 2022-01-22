@@ -9,4 +9,5 @@ __all__ =[
     'DdmapDescreteDataset', 'DdmapDescreteDatasetDC',
     'DdmapDescreteDatasetWithRoadEdge',
     'DdmapDescreteDatasetWithRoadEdgeAndDashedAttribute',
+    'DdmapDescreteDatasetWithRoadEdgeAndDashedAttributeNew'
 ]
