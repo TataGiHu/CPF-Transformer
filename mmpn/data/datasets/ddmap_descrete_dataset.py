@@ -7,6 +7,7 @@ from torch.utils.data import Dataset
 from ..builder import DATASETS
 from mmcv.parallel import DataContainer
 import torch
+import time
 
 @DATASETS.register_module()
 class DdmapDescreteDatasetDC(Dataset):
@@ -305,114 +306,125 @@ class DdmapDescreteDatasetWithRoadEdgeAndDashedAttribute(Dataset):
     
 @DATASETS.register_module()
 class DdmapDescreteDatasetWithRoadEdgeAndDashedAttributeNew(Dataset):
-  def __init__(self, data_path):
-    self.data_path = data_path
+  def __init__(self, root_path, data_file):
+    self.root_path = root_path
+    self.data_file = data_file 
     self.number = 0
-    for file in os.listdir(data_path):
-      if ".txt" not in file:
-        continue
-      self.number +=1
-  def __transform_data(self, file_path):
+    self.files_path = []
+    with open(data_file) as f:
+      self.files_path = [x.strip() for x in f.readlines()]
+
+    self.number = len(self.files_path)
+
+  def __transform_data(self, idx):
+
+    while True:
+        relative_file_path = self.files_path[idx]
+        file_path = os.path.join(self.root_path, relative_file_path)
+        
+        data_raw = []
         with open(file_path, 'r') as f:
-          cur_timestamp = file_path.split('/')[-1].split('_')[-1].split(".")[0]
           data_raw = f.readlines()
-          for data in data_raw: 
-            data_json = json.loads(data)
-            
-            gt = data_json['gt']
-            gt_input = []
-            class_input = []
-            for lane in gt:
-              if len(lane) == 0:
-                    class_input.append(0)
-                    for i in range(25):
-                          gt_input.append(0)
-                    continue
-              class_input.append(1)
-              for lane_point in lane:
-                gt_input.append(lane_point[1])
-            dt = data_json['dt']
-            n_frame_lanes = dt["lanes"]
-            n_frame_road_edges = dt["road_edges"]
-            data_input = []
-            data_len = 100
-            furthest_point_x = -float('inf')
-            assert len(n_frame_lanes) == len(n_frame_road_edges)
-            ##########################################################################
-            #input unit: lane
-            #input format: [{lane(0)/edge(1)},{solid(0)/dashed(1)},x1,y1,...,x100.y100]
-            #input sample: [1. , 0. , 3.2123 , 4.5272 , ...]
-            ##########################################################################
-            #upload lanes into data_input
-            for frame in n_frame_lanes:
-              if len(frame)==0:
-                continue
-              else:
-                for lane in frame:
-                  cur_lane = [0.]
-                  if lane["lane_type"]==1:
-                    cur_lane.append(1.)
-                  else:
-                    cur_lane.append(0.)  
-                  for i in range(data_len):
-                    if i<len(lane["points"]):
-                      cur_lane.extend(lane["points"][i])
-                      if lane["points"][i][0] > furthest_point_x:
-                        furthest_point_x = lane["points"][i][0]
-                    else:
-                      cur_lane.extend([0.,0.])
-                  data_input.append(cur_lane)
-            #upload road_edges into data_input
-            for frame in n_frame_road_edges:
-              if len(frame)==0:
-                continue
-              else:
-                for lane in frame:
-                  cur_lane = [1.,0.]
-                  for i in range(data_len):
-                    if i<len(lane):
-                      cur_lane.extend(lane[i])
-                    else:
-                      cur_lane.extend([0.,0.])
-                  
-            if len(data_input) == 0:
+
+        cur_timestamp = file_path.split('/')[-1].split('_')[0]
+        for data in data_raw: 
+          data_json = json.loads(data)
+          
+          gt = data_json['gt']
+          gt_input = []
+          class_input = []
+          for lane in gt:
+            if len(lane) == 0:
+                  class_input.append(0)
+                  for i in range(25):
+                        gt_input.append(0)
+                  continue
+            class_input.append(1)
+            for lane_point in lane:
+              gt_input.append(lane_point[1])
+          dt = data_json['dt']
+          n_frame_lanes = dt["lanes"]
+          n_frame_road_edges = dt["road_edges"]
+          data_input = []
+          data_len = 100
+          furthest_point_x = -float('inf')
+          assert len(n_frame_lanes) == len(n_frame_road_edges)
+          ##########################################################################
+          #input unit: lane
+          #input format: [{lane(0)/edge(1)},{solid(0)/dashed(1)},x1,y1,...,x100.y100]
+          #input sample: [1. , 0. , 3.2123 , 4.5272 , ...]
+          ##########################################################################
+          #upload lanes into data_input
+          for frame in n_frame_lanes:
+            if len(frame)==0:
               continue
-              
-            ts = {
-              "wm" : cur_timestamp,
-              "egopose" : cur_timestamp,
-              "vision" : cur_timestamp
-            }
+            else:
+              for lane in frame:
+                cur_lane = [0.]
+                if lane["lane_type"]==1:
+                  cur_lane.append(1.)
+                else:
+                  cur_lane.append(0.)  
+                for i in range(data_len):
+                  if i<len(lane["points"]):
+                    cur_lane.extend(lane["points"][i])
+                    if lane["points"][i][0] > furthest_point_x:
+                      furthest_point_x = lane["points"][i][0]
+                  else:
+                    cur_lane.extend([0.,0.])
+                data_input.append(cur_lane)
+          #upload road_edges into data_input
+          for frame in n_frame_road_edges:
+            if len(frame)==0:
+              continue
+            else:
+              for lane in frame:
+                cur_lane = [1.,0.]
+                for i in range(data_len):
+                  if i<len(lane):
+                    cur_lane.extend(lane[i])
+                  else:
+                    cur_lane.extend([0.,0.])
+                
+          if len(data_input) == 0:
+            idx = (idx + 1 ) % self.number
+            continue
             
-            #generate output mask
-            output_mask_cur = []
-            output_mask_begin = -20
-            output_mask_end = 105
-            output_mask_step = 5
-            furthest_mark = output_mask_begin
-            for i in range(output_mask_begin, output_mask_end, output_mask_step):
-              if furthest_point_x >= 100:
-                furthest_mark = 100
-              if furthest_point_x <= i:
-                furthest_mark = i
-                break
-            num_reserve = int((furthest_mark-output_mask_begin)/output_mask_step+1)
-            num_discard = int((output_mask_end-output_mask_begin)/output_mask_step-num_reserve)
-            output_mask_unit = [1.]*num_reserve
-            discard_mask = [0.]*num_discard
-            output_mask_unit.extend(discard_mask)
-            for i in range(len(gt)):
-              output_mask_cur.append(output_mask_unit)
-            #restore the furthest lane length
-            return data_input, [gt_input,class_input], ts, output_mask_cur, num_reserve
+          ts = {
+            "wm" : cur_timestamp,
+            "egopose" : cur_timestamp,
+            "vision" : cur_timestamp
+          }
+          
+          #generate output mask
+          output_mask_cur = []
+          output_mask_begin = -20
+          output_mask_end = 105
+          output_mask_step = 5
+          furthest_mark = output_mask_begin
+          for i in range(output_mask_begin, output_mask_end, output_mask_step):
+            if furthest_point_x >= 100:
+              furthest_mark = 100
+            if furthest_point_x <= i:
+              furthest_mark = i
+              break
+          num_reserve = int((furthest_mark-output_mask_begin)/output_mask_step+1)
+          num_discard = int((output_mask_end-output_mask_begin)/output_mask_step-num_reserve)
+          output_mask_unit = [1.]*num_reserve
+          discard_mask = [0.]*num_discard
+          output_mask_unit.extend(discard_mask)
+          for i in range(len(gt)):
+            output_mask_cur.append(output_mask_unit)
+          #restore the furthest lane length
+          return data_input, [gt_input,class_input], ts, output_mask_cur, num_reserve
         
   
   def __len__(self):
     return self.number
 
   def __getitem__(self, idx):
-    file_path = self.data_path + "/" + os.listdir(self.data_path)[idx]
-    data_input, gt_input, meta, output_mask_cur, furthest_point_mark = self.__transform_data(file_path)
+
+    data_input, gt_input, meta, output_mask_cur, furthest_point_mark = self.__transform_data(idx)
     x = np.array(data_input, dtype=np.float32)
     y = np.array(gt_input[0], dtype=np.float32) # just for interface placeholder  
     existence = np.array(gt_input[1], dtype=np.float32)     #Determine if a centerline exists

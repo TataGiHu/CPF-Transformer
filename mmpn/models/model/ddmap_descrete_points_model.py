@@ -46,8 +46,8 @@ class DdmapDescreteModelThreeQueries(nn.Module):
     num_queries = 3
     d_model = 128
     nhead=8
-    num_encoder_layers=1
-    num_decoder_layers=1
+    num_encoder_layers=6
+    num_decoder_layers=6
 
     hidden_dim =  d_model
     input_feature_size = 202
