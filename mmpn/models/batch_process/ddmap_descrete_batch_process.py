@@ -134,7 +134,50 @@ class DdmapDescreteBatchProcessDCThreeQueries(nn.Module):
             
             
         else:
+            self.do_particle = True
+            pred[0][:,0] *= classes[:,:,0]
+            pred[0][:,1] *= classes[:,:,1]
+            pred[0][:,2] *= classes[:,:,2]     
+            pred_on_mask = pred[0] * output_mask
+            label_on_mask = label * output_mask
+            loss = self.loss(pred_on_mask, label_on_mask, self.weight_device)
+            classes_reshape = classes.view(-1,3,1)
+            classification_loss = self.classification_loss(pred[1], classes_reshape)
+            #-----particle_filter_output------
+            pred[3][:,0] *= classes[:,:,0]
+            pred[3][:,1] *= classes[:,:,1]
+            pred[3][:,2] *= classes[:,:,2]
+            PF_pred_on_mask = pred[3] * output_mask
+            PF_loss = self.loss(PF_pred_on_mask, label_on_mask, self.weight_device)
+            PF_loss = PF_loss + classification_loss
+            #--------------------------------
+            #-----combined particle_filter_output------
+            pred[2][:,0] *= classes[:,:,0]
+            pred[2][:,1] *= classes[:,:,1]
+            pred[2][:,2] *= classes[:,:,2]
+            CPF_pred_on_mask = pred[2] * output_mask
+            CPF_loss = self.loss(CPF_pred_on_mask, label_on_mask, self.weight_device)
+            CPF_loss = CPF_loss + classification_loss  
+            #--------------------------------
+            loss = loss + classification_loss
+            print("===============================")
+            print("loss:{}".format(loss))
+            print("PF_loss:{}".format(PF_loss))
+            print("CPF_loss:{}".format(CPF_loss))
+            print("===============================")
+            # ------------------------------------------
+            if loss != PF_loss and PF_loss!=CPF_loss and loss<5.0:
+              self.loss_trans.append(float(loss))
+              self.loss_PF.append(float(PF_loss))
+              self.loss_CPF.append(float(CPF_loss))
+              f = open('/share12T5/mingquan/mhw_train_diploma/test_loss.txt','w')
+              f.write(json.dumps(self.loss_trans)+os.linesep)
+              f.write(json.dumps(self.loss_PF)+os.linesep)
+              f.write(json.dumps(self.loss_CPF)+os.linesep)
+              f.close()
+            
             outputs = dict(pred=pred, meta=meta, furthest_point_mark=furthest_point_mark)
+            
         return outputs
 
 

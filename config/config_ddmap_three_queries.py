@@ -20,7 +20,7 @@ data_provider = dict(
             ),
             val=dict(
               type='DdmapDescreteDatasetWithRoadEdgeAndDashedAttribute', 
-              data_path='/share12T5/mingquan/train_data',
+              data_path='/share12T5/mingquan/test_data',
             ),
  
            )
@@ -73,8 +73,8 @@ total_epochs = 300
 # logs and checkpoint
 log_level = 'INFO'
 
-resume_from = None
-#resume_from = "/home/mingquan/mhw_train/work/test1/latest.pth"
+#resume_from = None
+resume_from = "/home/mingquan/mhw_train/work/test1/latest.pth"
 
 load_from = None
 # load_from = "/workspace/mhw_train/work/test1/epoch_1000.pth"
