@@ -9,7 +9,7 @@ import json,os
 from torch.utils.data.dataloader import default_collate
 from .common import collate_fn
 from .common import collate_fn_output_mask
-
+import time
 
 
 @BATCH_PROCESS.register_module()
@@ -77,7 +77,7 @@ class DdmapDescreteBatchProcessDCThreeQueries(nn.Module):
       self.loss_CPF = []
 
     def __call__(self, model, data, train_mode):
-
+        start_time = time.time()
         input_data, mask, label, classes, meta, output_mask, furthest_point_mark= collate_fn_output_mask(data)
         pred = model(input_data, mask, label, self.do_particle)
         outputs = dict()
@@ -119,11 +119,11 @@ class DdmapDescreteBatchProcessDCThreeQueries(nn.Module):
             print("promote:{}%".format((loss-PF_loss)/loss*100))
             print("------------------------")
             print("------------------------")
-            if loss != PF_loss and PF_loss!=CPF_loss and loss<4.0:
+            if loss != PF_loss and PF_loss!=CPF_loss and loss<20.0:
               self.loss_trans.append(float(loss))
               self.loss_PF.append(float(PF_loss))
               self.loss_CPF.append(float(CPF_loss))
-              f = open('/share12T5/mingquan/mhw_train_diploma/loss_result.txt','w')
+              f = open('/share12T5/tt/loss_result.txt','w')
               f.write(json.dumps(self.loss_trans)+os.linesep)
               f.write(json.dumps(self.loss_PF)+os.linesep)
               f.write(json.dumps(self.loss_CPF)+os.linesep)
@@ -177,7 +177,8 @@ class DdmapDescreteBatchProcessDCThreeQueries(nn.Module):
               f.close()
             
             outputs = dict(pred=pred, meta=meta, furthest_point_mark=furthest_point_mark)
-            
+        end_time = time.time()
+        print("time_using:{}".format(end_time - start_time))
         return outputs
 
 
